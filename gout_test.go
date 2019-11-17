@@ -4,14 +4,16 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestRunOutputs(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 	cline := []string{
-		"/bin/bash",
+		"dash",
 		"-c",
-		"echo foo ; sleep 2 ; echo eee >&2 ; sleep 1; echo bar",
+		"echo foo ; sleep 1 ; echo eee >&2 ; sleep 1; echo bar; sleep 2 ; echo mumble",
 	}
 	o, e, err := RunOutputs(ctx, cline)
 	if err != nil {

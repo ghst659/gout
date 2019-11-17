@@ -10,22 +10,26 @@ import (
 
 // RunOutputs runs a command-line and returns channels that stream out its stdout and stderr.
 func RunOutputs(ctx context.Context, cline []string) (outs, errs <-chan string, err error) {
-	cmd := exec.CommandContext(ctx, cline[0], cline[1:]...)
+	program, err := exec.LookPath(cline[0])
+	if err != nil {
+		return nil, nil, err
+	}
+	cmd := exec.CommandContext(ctx, program, cline[1:]...)
 	oPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, err
 	}
-	outs = makeChan(ctx, oPipe)
-
 	ePipe, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, nil, err
 	}
-	errs = makeChan(ctx, ePipe)
 
 	if err := cmd.Start(); err != nil {
 		return nil, nil, err
 	}
+	outs = makeChan(ctx, oPipe)
+	errs = makeChan(ctx, ePipe)
+
 	go func() {
 		cmd.Wait()
 	}()
