@@ -4,9 +4,37 @@ package gout
 import (
 	"context"
 	"io"
+	"log"
 	"os/exec"
+	"sync"
 	"text/scanner"
 )
+
+// MergeChan merges strings from two channels into one.
+func MergeChan(ctx context.Context, inchans ...<-chan string) <-chan string {
+	out := make(chan string)
+	var wg sync.WaitGroup
+	for _, in := range inchans {
+		wg.Add(1)
+		go chanToChan(ctx, &wg, in, out)
+	}
+	go func() {
+		defer close(out)
+		wg.Wait()
+	}()
+	return out
+}
+
+func chanToChan(ctx context.Context, wg *sync.WaitGroup, in <-chan string, out chan<- string) {
+	defer wg.Done()
+	for line := range in {
+		select {
+		case out <- line:
+		case <-ctx.Done():
+			return
+		}
+	}
+}
 
 // RunOutputs runs a command-line and returns channels that stream out its stdout and stderr.
 func RunOutputs(ctx context.Context, cline []string) (outs, errs <-chan string, err error) {
@@ -31,7 +59,9 @@ func RunOutputs(ctx context.Context, cline []string) (outs, errs <-chan string, 
 	errs = makeChan(ctx, ePipe)
 
 	go func() {
-		cmd.Wait()
+		if err := cmd.Wait(); err != nil {
+			log.Printf("%s: %s", program, err.Error())
+		}
 	}()
 	return
 }
