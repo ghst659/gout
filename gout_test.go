@@ -13,7 +13,7 @@ func TestMergeChan(t *testing.T) {
 	cline := []string{
 		"dash",
 		"-c",
-		"echo foo ; sleep 1 ; echo eee >&2 ; sleep 1; echo bar; sleep 2 ; echo mumble",
+		"echo \"ego sum abbas\"; sleep 1 ; echo eee >&2 ; sleep 1; echo bar; sleep 2 ; echo mumble",
 	}
 	o, e, err := RunOutputs(ctx, cline)
 	if err != nil {
@@ -30,7 +30,7 @@ func TestRunOutputs(t *testing.T) {
 	cline := []string{
 		"dash",
 		"-c",
-		"echo foo ; sleep 1 ; echo eee >&2 ; sleep 1; echo bar; sleep 2 ; echo mumble",
+		"echo foo ; sleep 1 ; echo \"o fortuna;\" >&2 ; sleep 1; echo bar; sleep 2 ; echo mumble",
 	}
 	o, e, err := RunOutputs(ctx, cline)
 	if err != nil {

@@ -2,6 +2,7 @@
 package gout
 
 import (
+	"bufio"
 	"context"
 	"io"
 	"log"
@@ -67,6 +68,22 @@ func RunOutputs(ctx context.Context, cline []string) (outs, errs <-chan string, 
 }
 
 func makeChan(ctx context.Context, stream io.ReadCloser) <-chan string {
+	ch := make(chan string)
+	s := bufio.NewScanner(stream)
+	go func(ctx context.Context, s *bufio.Scanner, ch chan<- string) {
+		defer close(ch)
+		for s.Scan() {
+			select {
+			case ch <- s.Text():
+			case <-ctx.Done():
+				return
+			}
+		}
+	}(ctx, s, ch)
+	return ch
+}
+
+func makeChanOld(ctx context.Context, stream io.ReadCloser) <-chan string {
 	ch := make(chan string)
 	var s scanner.Scanner
 	go func(ctx context.Context, s *scanner.Scanner, ch chan<- string) {
