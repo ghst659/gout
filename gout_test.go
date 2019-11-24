@@ -19,9 +19,11 @@ func TestMergeChan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("fatal error: %v", err)
 	}
-	for mLine := range MergeChan(ctx, o, e) {
-		t.Logf("merged: %q", mLine)
+	var got []string
+	for line := range MergeChan(ctx, o, e) {
+		got = append(got, line)
 	}
+	checkSlice(t, "merged", got, []string{"ego sum abbas", "eee", "bar"})
 }
 
 func TestRunOutputs(t *testing.T) {
@@ -36,17 +38,29 @@ func TestRunOutputs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("fatal error: %v", err)
 	}
+	var gotOut []string
+	var gotErr []string
 	var wg sync.WaitGroup
 	wg.Add(2)
-	go printStream(t, &wg, "stdout", o)
-	go printStream(t, &wg, "stderr", e)
+	go fill(&wg, o, &gotOut)
+	go fill(&wg, e, &gotErr)
 	wg.Wait()
+	checkSlice(t, "stdout", gotOut, []string{"foo", "bar"})
+	checkSlice(t, "stderr", gotErr, []string{"o fortuna;"})
 }
 
-func printStream(t *testing.T, wg *sync.WaitGroup, tag string, ch <-chan string) {
+func checkSlice(t *testing.T, tag string, got, want []string) {
+	for i := 0; i < len(got); i++ {
+		t.Logf("%s: %q", tag, got[i])
+		if got[i] != want[i] {
+			t.Errorf("%s mismatch: got %s want %s", tag, got[i], want[i])
+		}
+	}
+}
+
+func fill(wg *sync.WaitGroup, ch <-chan string, b *[]string) {
 	defer wg.Done()
 	for line := range ch {
-		t.Logf("%s: %q", tag, line)
+		*b = append(*b, line)
 	}
-	t.Logf("%s closed", tag)
 }
